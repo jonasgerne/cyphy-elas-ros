@@ -284,7 +284,7 @@ public:
     // Stereo parameters
     float f = model_.right().fx();
     float T = model_.baseline();
-    float depth_fact = T * f * 1000.0f;
+    float depth_fact = T * f; // * 1000.0f;
     uint16_t bad_point = std::numeric_limits<uint16_t>::max();
 
     // Have a synchronised pair of images, now to process using elas
@@ -348,9 +348,9 @@ public:
 
     cv_bridge::CvImage out_depth_msg;
     out_depth_msg.header = l_image_msg->header;
-    out_depth_msg.encoding = sensor_msgs::image_encodings::MONO16;
-    out_depth_msg.image = cv::Mat(height, width, CV_16UC1);
-    uint16_t *out_depth_msg_image_data = reinterpret_cast<uint16_t *>(&out_depth_msg.image.data[0]);
+    out_depth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+    out_depth_msg.image = cv::Mat(height, width, CV_32FC1);
+    auto *out_depth_msg_image_data = reinterpret_cast<float_t *>(&out_depth_msg.image.data[0]);
 
     cv_bridge::CvImage out_msg;
     out_msg.header = l_image_msg->header;
@@ -366,7 +366,7 @@ public:
       float disp = l_disp_data[i];
       // In milimeters
       //out_depth_msg_image_data[i] = disp;
-      out_depth_msg_image_data[i] = disp <= 0.0f ? bad_point : (uint16_t)(depth_fact / disp);
+      out_depth_msg_image_data[i] = disp <= 0.0f ? NAN : (float)(depth_fact / disp);
 
       if (l_disp_data[i] > 0)
         inliers.push_back(i);
