@@ -80,6 +80,7 @@ public:
     local_nh.param<bool>("filter_adaptive_mean", filter_adaptive_mean, 1);
     local_nh.param<bool>("postprocess_only_left", postprocess_only_left, 1);
     local_nh.param<bool>("subsampling", subsampling, 0);
+    local_nh.param<bool>("republish_left_frame", republish_left_frame, 0);
 
     // Topics
     std::string stereo_ns = nh.resolveName("stereo");
@@ -100,6 +101,8 @@ public:
 
     disp_pub_.reset(new Publisher(local_it.advertise("image_disparity", 1)));
     depth_pub_.reset(new Publisher(local_it.advertise("depth", 1)));
+    if (republish_left_frame)
+        left_repub_.reset(new Publisher(local_it.advertise("repub_left", 1)));
     pc_pub_.reset(new ros::Publisher(local_nh.advertise<PointCloud>("point_cloud", 1)));
     elas_fd_pub_.reset(new ros::Publisher(local_nh.advertise<elas_ros::ElasFrameData>("frame_data", 1)));
 
@@ -375,6 +378,8 @@ public:
     // Publish
     disp_pub_->publish(out_msg.toImageMsg());
     depth_pub_->publish(out_depth_msg.toImageMsg());
+    if (republish_left_frame)
+        left_repub_->publish(l_image_msg);
     publish_point_cloud(l_image_msg, l_disp_data, inliers, width, height, l_info_msg, r_info_msg);
 
     pub_disparity_.publish(disp_msg);
@@ -390,6 +395,7 @@ private:
   InfoSubscriber left_info_sub_, right_info_sub_;
   boost::shared_ptr<Publisher> disp_pub_;
   boost::shared_ptr<Publisher> depth_pub_;
+  boost::shared_ptr<Publisher> left_repub_;
   boost::shared_ptr<ros::Publisher> pc_pub_;
   boost::shared_ptr<ros::Publisher> elas_fd_pub_;
   boost::shared_ptr<ExactSync> exact_sync_;
@@ -421,6 +427,7 @@ private:
   bool filter_adaptive_mean;
   bool postprocess_only_left;
   bool subsampling;
+  bool republish_left_frame;
 
   image_geometry::StereoCameraModel model_;
   ros::Publisher pub_disparity_;
